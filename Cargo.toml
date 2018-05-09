@@ -1,0 +1,6 @@
+[package]
+name = "cowvec"
+version = "0.1.0"
+authors = ["Jef <jackefransham@gmail.com>"]
+
+[dependencies]
