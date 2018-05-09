@@ -1,6 +1,6 @@
 [package]
 name = "cowvec"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jef <jackefransham@gmail.com>"]
 description = "Faster version of `Cow<[T]>` and `Cow<str>`"
 license = "Unlicense"

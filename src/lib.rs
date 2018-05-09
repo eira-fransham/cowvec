@@ -1,12 +1,18 @@
-use std::{str, mem, ptr, slice};
+use std::{fmt, mem, ptr, slice, str};
 use std::ops::Deref;
 
+#[derive(Clone)]
 pub struct CowStr<'a>(CowVec<'a, u8>);
 
 impl<'a> CowStr<'a> {
     #[inline]
     pub fn borrowed(b: &'a str) -> Self {
         CowStr(CowVec::borrowed(b.as_bytes()))
+    }
+
+    #[inline]
+    pub fn owned(v: String) -> Self {
+        CowStr(CowVec::owned(v.into_bytes()))
     }
 
     #[inline]
@@ -22,10 +28,15 @@ impl<'a> CowStr<'a> {
     }
 }
 
-impl CowStr<'static> {
-    #[inline]
-    pub fn owned(v: String) -> Self {
-        CowStr(CowVec::owned(v.into_bytes()))
+impl<'a> fmt::Debug for CowStr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.as_ref().fmt(f)
+    }
+}
+
+impl<'a> fmt::Display for CowStr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.as_ref().fmt(f)
     }
 }
 
@@ -76,6 +87,20 @@ impl<'a, T> CowVec<'a, T> {
     }
 
     #[inline]
+    pub fn owned(v: Vec<T>) -> Self {
+        let out = CowVec {
+            ptr: v.as_ptr(),
+            len: v.len(),
+            cap: v.capacity(),
+            _marker: Default::default(),
+        };
+
+        mem::forget(v);
+
+        out
+    }
+
+    #[inline]
     pub fn into_owned(self) -> Vec<T>
     where
         T: Clone,
@@ -105,19 +130,25 @@ impl<'a, T> CowVec<'a, T> {
     }
 }
 
-impl<T> CowVec<'static, T> {
-    #[inline]
-    pub fn owned(v: Vec<T>) -> Self {
-        let out = CowVec {
-            ptr: v.as_ptr(),
-            len: v.len(),
-            cap: v.capacity(),
-            _marker: Default::default(),
-        };
+impl<'a, T> Clone for CowVec<'a, T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        if self.cap == 0 {
+            CowVec { ..*self }
+        } else {
+            Vec::from(self.as_ref()).into()
+        }
+    }
+}
 
-        mem::forget(v);
-
-        out
+impl<'a, T> fmt::Debug for CowVec<'a, T>
+where
+    for<'any> &'any [T]: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.as_ref().fmt(f)
     }
 }
 
@@ -127,7 +158,7 @@ impl<'a, T> From<&'a [T]> for CowVec<'a, T> {
     }
 }
 
-impl<T> From<Vec<T>> for CowVec<'static, T> {
+impl<'a, T> From<Vec<T>> for CowVec<'a, T> {
     fn from(other: Vec<T>) -> Self {
         CowVec::owned(other)
     }
@@ -158,7 +189,7 @@ impl<'a, T> Deref for CowVec<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{CowVec, CowStr};
+    use super::{CowStr, CowVec};
 
     #[test]
     fn borrowed() {
