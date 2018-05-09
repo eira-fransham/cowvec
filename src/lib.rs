@@ -29,6 +29,18 @@ impl CowStr<'static> {
     }
 }
 
+impl<'a> From<&'a str> for CowStr<'a> {
+    fn from(other: &'a str) -> Self {
+        CowStr::borrowed(other)
+    }
+}
+
+impl From<String> for CowStr<'static> {
+    fn from(other: String) -> Self {
+        CowStr::owned(other)
+    }
+}
+
 impl<'a> AsRef<str> for CowStr<'a> {
     #[inline]
     fn as_ref(&self) -> &str {
@@ -106,6 +118,18 @@ impl<T> CowVec<'static, T> {
         mem::forget(v);
 
         out
+    }
+}
+
+impl<'a, T> From<&'a [T]> for CowVec<'a, T> {
+    fn from(other: &'a [T]) -> Self {
+        CowVec::borrowed(other)
+    }
+}
+
+impl<T> From<Vec<T>> for CowVec<'static, T> {
+    fn from(other: Vec<T>) -> Self {
+        CowVec::owned(other)
     }
 }
 
