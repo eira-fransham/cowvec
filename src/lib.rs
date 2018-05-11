@@ -1,5 +1,5 @@
-use std::{fmt, mem, ptr, slice, str};
 use std::ops::Deref;
+use std::{fmt, mem, ptr, slice, str};
 
 #[derive(Clone)]
 pub struct CowStr<'a>(CowVec<'a, u8>);
@@ -25,6 +25,24 @@ impl<'a> CowStr<'a> {
         self.0
             .try_owned()
             .map(|v| unsafe { String::from_utf8_unchecked(v) })
+    }
+}
+
+impl<'a> PartialEq<&'a str> for CowStr<'a> {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_ref() == *other
+    }
+}
+
+impl<'a> PartialEq<String> for CowStr<'a> {
+    fn eq(&self, other: &String) -> bool {
+        *self == &**other
+    }
+}
+
+impl<'a> PartialEq for CowStr<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        *self == other.as_ref()
     }
 }
 
@@ -140,6 +158,33 @@ where
         } else {
             Vec::from(self.as_ref()).into()
         }
+    }
+}
+
+impl<'a, T> PartialEq<&'a [T]> for CowVec<'a, T>
+where
+    for<'any> &'any [T]: PartialEq,
+{
+    fn eq(&self, other: &&[T]) -> bool {
+        self.as_ref() == *other
+    }
+}
+
+impl<'a, T> PartialEq<Vec<T>> for CowVec<'a, T>
+where
+    for<'any> &'any [T]: PartialEq,
+{
+    fn eq(&self, other: &Vec<T>) -> bool {
+        *self == &**other
+    }
+}
+
+impl<'a, T> PartialEq for CowVec<'a, T>
+where
+    for<'any> &'any [T]: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        *self == other.as_ref()
     }
 }
 
